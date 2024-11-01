@@ -68,13 +68,48 @@ def scrape_stock_data(stock_symbol):
         stock_data['name'] = soup.find('a', class_='c-faceplate__company-link').text.strip()
         stock_data['isin'] = soup.find('h2', class_='c-faceplate__isin').text.strip()
 
-        company_data = soup.find('div', class_='c-faceplate__data').contents[3].find_all('p')
+        # Find the 'c-faceplate__data' div
+        data_div = soup.find('div', class_='c-faceplate__data')
+        
+        # Find all 'p' elements in order
+        p_elements = data_div.find_all('p', recursive=True)
 
-        # Retrieve the company's stock dividend yield and P/E ratio
-        stock_data['div_yield'] = convert_string_to_float(company_data[1].text)
-        stock_data['pe_ratio'] = convert_string_to_float(company_data[3].text)
+        data_points = {}
+        heading = None
 
-        logger.info(f"Successfully scraped data for {stock_symbol}")
+        # Build a dictionary of data points from the 'p' elements
+        for p in p_elements:
+            classes = p.get('class', [])
+            text = p.get_text(strip=True)
+            if 'c-list-info__heading' in classes:
+                heading = text.lower()
+                data_points[heading] = None  # Initialize with None
+            elif 'c-list-info__value' in classes and heading:
+                data_points[heading] = text
+                heading = None  # Reset heading after pairing
+            else:
+                continue  # Skip unrelated <p> elements
+
+        # Extract the specific data points
+        for key, val in data_points.items():
+            if 'rendement' in key:
+                stock_data['div_yield'] = convert_string_to_float(val)
+            elif 'per' in key:
+                stock_data['pe_ratio'] = convert_string_to_float(val)
+
+        if stock_data['div_yield'] is None:
+            stock_data['div_yield'] = 0.0
+            logger.warning(f"Dividend yield not found for {stock_symbol}")
+
+        if stock_data['pe_ratio'] is None:
+            stock_data['pe_ratio'] = 0.0
+            logger.warning(f"PE ratio not found for {stock_symbol}")
+
+        if stock_data['div_yield'] == 0.0 or stock_data['pe_ratio'] == 0.0:
+            logger.info(f"Partially scraped data for {stock_symbol}")
+        else:
+            logger.info(f"Successfully scraped data for {stock_symbol}")
+            
     except AttributeError as e:
         logger.error(f"Data extraction error for {stock_symbol}: {e}")
         return None
