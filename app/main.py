@@ -1,9 +1,8 @@
-# import json
-# import os
 import requests
 import logging
 
 from bs4 import BeautifulSoup
+
 
 def convert_string_to_float(value):
     """
@@ -14,12 +13,13 @@ def convert_string_to_float(value):
     """
     try:
         # Remove unwanted characters and replace comma with period
-        cleaned_value = value.replace(',', '.').replace('%', '').strip()
+        cleaned_value = value.replace(",", ".").replace("%", "").strip()
         return float(cleaned_value)
     except (ValueError, AttributeError) as e:
         # Return None or a default value if conversion fails
-        logging.error(f"Conversion failed for value '{value}': {e}")
+        logging.error("Conversion failed for value '%s': %s", value, e)
         return None
+
 
 def get_stock_page(stock_symbol):
     """
@@ -33,18 +33,19 @@ def get_stock_page(stock_symbol):
     logger = logging.getLogger(__name__)
 
     url = f"https://www.boursorama.com/cours/{stock_symbol}"
-    logger.info(f"Fetching data for {stock_symbol} from {url}")
+    logger.info("Fetching data for %s from %s", stock_symbol, url)
     try:
-        response = requests.get(url)
+        response = requests.get(url, timeout=10)
         response.raise_for_status()  # Raises HTTPError for bad responses
     except requests.exceptions.HTTPError as http_err:
-        logger.error(f"HTTP error occurred for {stock_symbol}: {http_err}")
+        logger.error("HTTP error occurred for %s: %s", stock_symbol, http_err)
         return None
-    except Exception as err:
-        logger.error(f"An error occurred for {stock_symbol}: {err}")
+    except requests.exceptions.RequestException as req_err:
+        logger.error("Request exception occurred for %s: %s", stock_symbol, req_err)
         return None
 
     return response
+
 
 def scrape_stock_data(stock_symbol):
     """
@@ -60,31 +61,33 @@ def scrape_stock_data(stock_symbol):
     response = get_stock_page(stock_symbol)
 
     # analyze the HTML content using BeautifulSoup
-    soup = BeautifulSoup(response.content, 'html.parser')
+    soup = BeautifulSoup(response.content, "html.parser")
     stock_data = {}
 
     try:
         # Retrieve the company's name and ISIN code
-        stock_data['name'] = soup.find('a', class_='c-faceplate__company-link').text.strip()
-        stock_data['isin'] = soup.find('h2', class_='c-faceplate__isin').text.strip()
+        stock_data["name"] = soup.find(
+            "a", class_="c-faceplate__company-link"
+        ).text.strip()
+        stock_data["isin"] = soup.find("h2", class_="c-faceplate__isin").text.strip()
 
         # Find the 'c-faceplate__data' div
-        data_div = soup.find('div', class_='c-faceplate__data')
-        
+        data_div = soup.find("div", class_="c-faceplate__data")
+
         # Find all 'p' elements in order
-        p_elements = data_div.find_all('p', recursive=True)
+        p_elements = data_div.find_all("p", recursive=True)
 
         data_points = {}
         heading = None
 
         # Build a dictionary of data points from the 'p' elements
         for p in p_elements:
-            classes = p.get('class', [])
+            classes = p.get("class", [])
             text = p.get_text(strip=True)
-            if 'c-list-info__heading' in classes:
+            if "c-list-info__heading" in classes:
                 heading = text.lower()
                 data_points[heading] = None  # Initialize with None
-            elif 'c-list-info__value' in classes and heading:
+            elif "c-list-info__value" in classes and heading:
                 data_points[heading] = text
                 heading = None  # Reset heading after pairing
             else:
@@ -92,29 +95,30 @@ def scrape_stock_data(stock_symbol):
 
         # Extract the specific data points
         for key, val in data_points.items():
-            if 'rendement' in key:
-                stock_data['div_yield'] = convert_string_to_float(val)
-            elif 'per' in key:
-                stock_data['pe_ratio'] = convert_string_to_float(val)
+            if "rendement" in key:
+                stock_data["div_yield"] = convert_string_to_float(val)
+            elif "per" in key:
+                stock_data["pe_ratio"] = convert_string_to_float(val)
 
-        if stock_data['div_yield'] is None:
-            stock_data['div_yield'] = 0.0
-            logger.warning(f"Dividend yield not found for {stock_symbol}")
+        if stock_data["div_yield"] is None:
+            stock_data["div_yield"] = 0.0
+            logger.warning("Dividend yield not found for %s", stock_symbol)
 
-        if stock_data['pe_ratio'] is None:
-            stock_data['pe_ratio'] = 0.0
-            logger.warning(f"PE ratio not found for {stock_symbol}")
+        if stock_data["pe_ratio"] is None:
+            stock_data["pe_ratio"] = 0.0
+            logger.warning("PE ratio not found for %s", stock_symbol)
 
-        if stock_data['div_yield'] == 0.0 or stock_data['pe_ratio'] == 0.0:
-            logger.info(f"Partially scraped data for {stock_symbol}")
+        if stock_data["div_yield"] == 0.0 or stock_data["pe_ratio"] == 0.0:
+            logger.info("Partially scraped data for %s", stock_symbol)
         else:
-            logger.info(f"Successfully scraped data for {stock_symbol}")
-            
+            logger.info("Successfully scraped data for %s", stock_symbol)
+
     except AttributeError as e:
-        logger.error(f"Data extraction error for {stock_symbol}: {e}")
+        logger.error("Data extraction error for %s: %s", stock_symbol, e)
         return None
 
     return stock_data
+
 
 def main():
     """
@@ -123,19 +127,24 @@ def main():
     # Configure the logging
     logging.basicConfig(
         level=logging.INFO,  # Set to DEBUG for more verbose output
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         handlers=[
             logging.StreamHandler()  # You can add FileHandler here to log to a file
-        ]
+        ],
     )
 
-    stock_symbols = ['1rPAI', '1rPDG', 'INVALID_SYMBOL']  # Example list of stock symbols
+    stock_symbols = [
+        "1rPAI",
+        "1rPDG",
+        "INVALID_SYMBOL",
+    ]  # Example list of stock symbols
     for symbol in stock_symbols:
         stock_data = scrape_stock_data(symbol)
         if stock_data:
-            logging.info(f"Stock Data: {stock_data}")
+            logging.info("Stock Data for %s: %s", symbol, stock_data)
         else:
-            logging.warning(f"Failed to retrieve data for {symbol}")
+            logging.warning("Failed to retrieve data for %s", symbol)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
