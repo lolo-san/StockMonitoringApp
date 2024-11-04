@@ -1,0 +1,11 @@
+# Exclude Git repository files
+.git/
+.gitignore
+
+# Exclude Python cache files
+__pycache__/
+*.pyc
+
+# Exclude credentials and data directories
+credentials/
+data/
