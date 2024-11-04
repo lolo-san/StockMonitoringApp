@@ -1,3 +1,5 @@
+import csv
+import os
 import requests
 import logging
 
@@ -120,6 +122,17 @@ def scrape_stock_data(stock_symbol):
     return stock_data
 
 
+def read_stock_symbols(csv_file_path):
+    stock_symbols = []
+    with open(csv_file_path, mode="r", newline="", encoding="utf-8") as csvfile:
+        csvreader = csv.reader(csvfile)
+        for row in csvreader:
+            # Skip empty rows
+            if row:
+                stock_symbols.append(row[1])
+    return stock_symbols
+
+
 def main():
     """
     Main function that orchestrates the data scraping and insertion process.
@@ -133,11 +146,23 @@ def main():
         ],
     )
 
-    stock_symbols = [
-        "1rPAI",
-        "1rPDG",
-        "INVALID_SYMBOL",
-    ]  # Example list of stock symbols
+    # Load the configuration
+    environment = os.getenv("ENVIRONMENT", "cloud")
+    logging.info("Running in %s environment", environment)
+
+    if environment == "local":
+        local_csv_path = os.path.join(os.path.dirname(__file__), "../data/stocks.csv")
+    else:
+        local_csv_path = None
+
+    # Read the stock symbols from the CSV file
+    try:
+        stock_symbols = read_stock_symbols(local_csv_path)
+    except FileNotFoundError:
+        logging.error("CSV file not found at path: %s", local_csv_path)
+        return
+
+    # Scrape the stock data for each symbol
     for symbol in stock_symbols:
         stock_data = scrape_stock_data(symbol)
         if stock_data:

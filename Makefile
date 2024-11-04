@@ -1,5 +1,8 @@
 # Makefile for StockMonitoringApp
 
+# Variables
+ENVIRONMENT ?= local  # Default to 'local' if not specified
+
 # Help target
 .PHONY: help
 help:
@@ -29,4 +32,5 @@ lint:
 # Run the app locally
 .PHONY: run-local
 run-local:
-	python app/main.py
+	@echo "Running application locally with environment: $(ENVIRONMENT)"
+	ENVIRONMENT=$(ENVIRONMENT) python app/main.py
