@@ -34,3 +34,23 @@ lint:
 run-local:
 	@echo "Running application locally with environment: $(ENVIRONMENT)"
 	ENVIRONMENT=$(ENVIRONMENT) python app/main.py
+
+# Build the Docker image
+.PHONY: docker-build
+docker-build:
+	docker build -t stock-monitoring-app:latest .
+
+# Run the Docker container
+.PHONY: docker-run
+docker-run:
+	docker run --rm -it stock-monitoring-app:latest
+
+# Run the Docker container with volume mount (for development)
+.PHONY: docker-run-dev
+docker-run-dev:
+	docker run --rm -it -e ENVIRONMENT=$(ENVIRONMENT) -v "$(PWD)/data":/data stock-monitoring-app:latest
+
+# Docker clean up
+.PHONY: docker-clean
+docker-clean:
+	docker rmi stock-monitoring-app:latest
