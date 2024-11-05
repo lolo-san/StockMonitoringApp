@@ -8,6 +8,6 @@
     },
     "bigquery": {
         "dataset_id": "stock_dataset",
-        "table_id": "stock-metrics"
+        "table_id": "stock_metrics"
     }
 }

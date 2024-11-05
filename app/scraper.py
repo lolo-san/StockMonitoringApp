@@ -1,6 +1,8 @@
 import logging
 import requests
+
 from bs4 import BeautifulSoup
+from datetime import datetime, timezone
 
 
 def convert_string_to_float(value):
@@ -64,6 +66,11 @@ def scrape_stock_data(stock_symbol):
     stock_data = {}
 
     try:
+        # Initialize the dictionary with the stock symbol
+        stock_data["label"] = stock_symbol
+        stock_data["div_yield"] = 0.0
+        stock_data["pe_ratio"] = 0.0
+
         # Retrieve the company's name and ISIN code
         stock_data["name"] = soup.find(
             "a", class_="c-faceplate__company-link"
@@ -99,12 +106,14 @@ def scrape_stock_data(stock_symbol):
             elif "per" in key:
                 stock_data["pe_ratio"] = convert_string_to_float(val)
 
-        if stock_data["div_yield"] is None:
-            stock_data["div_yield"] = 0.0
+        # Add a timestamp
+        stock_data["scraped_at"] = datetime.now(timezone.utc).isoformat()
+
+        # Log warnings for missing data
+        if stock_data["div_yield"] == 0.0:
             logger.warning("Dividend yield not found for %s", stock_symbol)
 
-        if stock_data["pe_ratio"] is None:
-            stock_data["pe_ratio"] = 0.0
+        if stock_data["pe_ratio"] == 0.0:
             logger.warning("PE ratio not found for %s", stock_symbol)
 
         if stock_data["div_yield"] == 0.0 or stock_data["pe_ratio"] == 0.0:
