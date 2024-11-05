@@ -1,8 +1,5 @@
 # Makefile for StockMonitoringApp
 
-# Variables
-ENVIRONMENT ?= local  # Default to 'local' if not specified
-
 # Help target
 .PHONY: help
 help:
@@ -32,8 +29,7 @@ lint:
 # Run the app locally
 .PHONY: run-local
 run-local:
-	@echo "Running application locally with environment: $(ENVIRONMENT)"
-	ENVIRONMENT=$(ENVIRONMENT) python app/main.py
+	python app/main.py
 
 # Build the Docker image
 .PHONY: docker-build
@@ -45,12 +41,17 @@ docker-build:
 docker-run:
 	docker run --rm -it stock-monitoring-app:latest
 
-# Run the Docker container with volume mount (for development)
-.PHONY: docker-run-dev
-docker-run-dev:
-	docker run --rm -it -e ENVIRONMENT=$(ENVIRONMENT) -v "$(PWD)/data":/data stock-monitoring-app:latest
-
 # Docker clean up
 .PHONY: docker-clean
 docker-clean:
 	docker rmi stock-monitoring-app:latest
+
+# Build the Docker image to google artifact registry
+.PHONY: docker-build-gar
+docker-build-gar:
+	docker build -t europe-west9-docker.pkg.dev/stock-monitoring-project/stock-monitoring-app/stock-monitoring-app:latest .
+
+# Push the Docker image to google artifact registry
+.PHONY: docker-push-gar
+docker-push-gar:
+	docker push europe-west9-docker.pkg.dev/stock-monitoring-project/stock-monitoring-app/stock-monitoring-app:latest

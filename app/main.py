@@ -5,6 +5,7 @@ import requests
 import logging
 
 from bs4 import BeautifulSoup
+from google.cloud import storage
 
 
 def convert_string_to_float(value):
@@ -123,17 +124,44 @@ def scrape_stock_data(stock_symbol):
     return stock_data
 
 
-def read_stock_symbols(csv_file_path):
+def download_csv_data_as_string_from_gcs(config):
     """
-    Read stock symbols from a CSV file.
+    Downloads a CSV file from Google Cloud Storage.
+
+    :param config: The configuration object.
+    :return: The CSV file content as a string.
+    """
+    try:
+        # Initialize clients with credentials
+        project_name = config["project"]["name"]
+        storage_client = storage.Client(project_name)
+
+        # Download the CSV file containing stock URLs from Cloud Storage
+        bucket_name = config["cloud_storage"]["bucket_name"]
+        source_blob_name = config["cloud_storage"]["csv_file"]
+
+        bucket = storage_client.bucket(bucket_name)
+        blob = bucket.blob(source_blob_name)
+        return blob.download_as_string()
+    except FileNotFoundError:
+        logging.error("CSV file not found in GCS: %s %s", bucket_name, source_blob_name)
+        return None
+
+
+def read_stock_symbols_from_string(csv_data):
+    """
+    Read stock symbols from a CSV file content.
+
+    :param csv_data: The CSV file content as a string.
+    :return: A list of stock symbols.
     """
     stock_symbols = []
-    with open(csv_file_path, mode="r", newline="", encoding="utf-8") as csvfile:
-        csvreader = csv.reader(csvfile)
-        for row in csvreader:
-            # Skip empty rows
-            if row:
-                stock_symbols.append(row[1])
+    csv_data = csv_data.decode("utf-8").split("\n")
+    csvreader = csv.reader(csv_data)
+    for row in csvreader:
+        # Skip empty rows
+        if row:
+            stock_symbols.append(row[1])
     return stock_symbols
 
 
@@ -164,20 +192,15 @@ def main():
     config = load_config()
     logging.info("Configuration loaded: %s", config)
 
-    environment = os.getenv("ENVIRONMENT", "cloud")
-    logging.info("Running in %s environment", environment)
-
-    if environment == "local":
-        local_csv_path = os.path.join(os.path.dirname(__file__), "../data/stocks.csv")
-    else:
-        local_csv_path = "stocks.csv"
-
-    # Read the stock symbols from the CSV file
-    try:
-        stock_symbols = read_stock_symbols(local_csv_path)
-    except FileNotFoundError:
-        logging.error("CSV file not found at path: %s", local_csv_path)
+    # download the CSV file content as a string
+    csv_data = download_csv_data_as_string_from_gcs(config)
+    if not csv_data:
+        logging.error("Failed to download CSV data from GCS")
         return
+
+    # Read the stock symbols from the CSV file content
+    stock_symbols = read_stock_symbols_from_string(csv_data)
+    logging.info("Stock symbols loaded: %s", stock_symbols)
 
     # Scrape the stock data for each symbol
     for symbol in stock_symbols:
