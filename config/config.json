@@ -1,0 +1,13 @@
+{
+    "project": {
+        "name": "stock-monitoring-project"
+    },
+    "cloud_storage": {
+        "bucket_name": "stocks-csv-files",
+        "csv_file": "stocks.csv"
+    },
+    "bigquery": {
+        "dataset_id": "stock_dataset",
+        "table_id": "stock-metrics"
+    }
+}

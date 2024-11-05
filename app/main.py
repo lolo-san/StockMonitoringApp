@@ -1,5 +1,6 @@
 import csv
 import os
+import json
 import requests
 import logging
 
@@ -123,6 +124,9 @@ def scrape_stock_data(stock_symbol):
 
 
 def read_stock_symbols(csv_file_path):
+    """
+    Read stock symbols from a CSV file.
+    """
     stock_symbols = []
     with open(csv_file_path, mode="r", newline="", encoding="utf-8") as csvfile:
         csvreader = csv.reader(csvfile)
@@ -131,6 +135,16 @@ def read_stock_symbols(csv_file_path):
             if row:
                 stock_symbols.append(row[1])
     return stock_symbols
+
+
+def load_config():
+    """
+    Load configuration from config/config.json.
+    """
+    config_path = os.path.join(os.path.dirname(__file__), "../config/config.json")
+    with open(config_path, mode="r", encoding="utf-8") as config_file:
+        config = json.load(config_file)
+    return config
 
 
 def main():
@@ -147,13 +161,16 @@ def main():
     )
 
     # Load the configuration
+    config = load_config()
+    logging.info("Configuration loaded: %s", config)
+
     environment = os.getenv("ENVIRONMENT", "cloud")
     logging.info("Running in %s environment", environment)
 
     if environment == "local":
         local_csv_path = os.path.join(os.path.dirname(__file__), "../data/stocks.csv")
     else:
-        local_csv_path = None
+        local_csv_path = "stocks.csv"
 
     # Read the stock symbols from the CSV file
     try:
