@@ -15,4 +15,4 @@ COPY /app /app
 COPY /config /config
 
 # Define the command to run the application
-CMD ["python", "main.py"]
+CMD ["python", "-m", "app.main"]

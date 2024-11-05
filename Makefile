@@ -29,7 +29,7 @@ lint:
 # Run the app locally
 .PHONY: run-local
 run-local:
-	python app/main.py
+	python -m app.main
 
 # Build the Docker image
 .PHONY: docker-build
