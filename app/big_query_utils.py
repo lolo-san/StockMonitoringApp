@@ -1,7 +1,7 @@
 import logging
 
 from google.cloud import bigquery
-from google.api_core.exceptions import ClientError
+from google.api_core.exceptions import GoogleAPIError
 
 
 def upsert_stock_data(config, stock_data):
@@ -65,5 +65,5 @@ def upsert_stock_data(config, stock_data):
         query_job = client.query(merge_query, job_config=job_config)
         query_job.result()  # Waits for the job to complete.
         logging.info("Upserted data for ISIN: %s", stock_data["isin"])
-    except ClientError as e:
+    except GoogleAPIError as e:
         logging.error("An error occurred: %s", e)

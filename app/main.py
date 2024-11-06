@@ -34,7 +34,7 @@ def process_stocks(config, symbol_list):
 
         # Format the stock data as JSON with indentation
         # Define the order of fields
-        field_order = ["label", "name", "isin", "pe_ratio", "div_yield", "scraped_at"]
+        field_order = ["isin", "label", "name", "pe_ratio", "div_yield", "scraped_at"]
 
         # Reorder the dictionary
         stock_data_ordered = {field: stock_data[field] for field in field_order}

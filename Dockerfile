@@ -11,8 +11,8 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application code into the container
-COPY /app /app
-COPY /config /config
+COPY /app ./app
+COPY /config ./config
 
 # Define the command to run the application
 CMD ["python", "-m", "app.main"]
