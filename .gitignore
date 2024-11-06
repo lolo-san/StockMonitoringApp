@@ -163,3 +163,7 @@ cython_debug/
 
 # Data Files
 data/stocks.csv
+
+# VS Code
+.vscode/
+*.code-workspace
